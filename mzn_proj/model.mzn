@@ -32,7 +32,7 @@ constraint forall(i in 1..(n-1), t in 1..T)(
 constraint forall(i in 1..(n-1), t in 1..T)(cp * y[i, t] >= sum(j in (i+1)..n)(x[i, j, t]));
 
 % Вместимость транспортного средства не нарушается для любого участка движения
-constraint forall(i in 1..(n-1))(sum(k in 1..i, j in (i+1)..n)(x[k, j, P[i+1]]) <= cp);
+constraint forall(i in 1..(n-1))(forall(t in 1..T-P[i+1])(sum(k in 1..i, j in (i+1)..n)(x[k, j, t + P[i+1]]) <= cp));
 
 % Время отправления транспорта от последующих станций зависит от времени отправления от первой станции
 constraint forall(i in 2..(n-1), t in 1..T-P[i], dt in 1..P[i])(y[1,t] == y[i, t + P[i]]);
