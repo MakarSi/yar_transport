@@ -7,8 +7,8 @@ set of int: nws = 1..n-1;
 set of int: nw = 2..n;
 set of int: Tw = 1..T;
 array[nws] of int: p;             % время движения между остановками i и i+1
-array[nw] of int: P;              % время движения между остановками 1 и i 
-array[1..n-1] of int: P2;         % время движения между остановками 1 и i 
+array[nw] of int: P;              % время движения между остановками 1 и i  (i от 2 до n)
+array[nws] of int: P2;            % время движения между остановками 1 и i  (i от 1 до n-1)
 array[nws, nw, Tw] of int: g;     % количество пассажиров, приходящее в момент времени t на станцию i с целью отправиться на станцию j > i
 
 
@@ -24,32 +24,32 @@ constraint forall(i in nws, j in nw, t in Tw)(x[i, j, t] >= 0);
 constraint forall(i in nws, t in Tw)(z[i, t] >= 0); 
 
 % Выражение z через g и x
-constraint forall(i in 1..(n-1), t in 1..T)(
+constraint forall(i in nws, t in Tw)(
               z[i, t] = sum(dj in (i+1)..n, dt in 1..t)(g[i, dj, dt]) - sum(dt in 1..t, dj in (i+1)..n)(x[i, dj, dt])
               );
               
-% Количество уехавших с отстанвоки i на j за весь горизонт планирования равняется количеству прибывших 
+% Количество уехавших с остановки i на j за весь горизонт планирования равняется количеству прибывших 
 constraint forall(i in nws, j in nw) (sum(t in Tw) (x[i, j, t]) == sum(t in Tw)(g[i,j,t]));
                                            
-% Пассажиры начинают движение, только при прибытии транспорта, и в транспорт садится не более его вместимости
-constraint forall(i in 1..(n-1), t in 1..T)(cp * y[i, t] >= sum(j in (i+1)..n)(x[i, j, t]));
+% Пассажиры начинают движение только при прибытии транспорта, и в транспорт садится не более его вместимости
+constraint forall(i in nws, t in Tw)(cp * y[i, t] >= sum(j in (i+1)..n)(x[i, j, t]));
 
 % Вместимость транспортного средства не нарушается для любого участка движения
-constraint forall(t in 1..T-P[n]+1, k in 1..n-1)(sum(i in 1..k, j in (k+1)..n)(x[i, j, t + P2[i]]) <= y[1, t] * cp);
+constraint forall(t in 1..T-P[n]+1, k in nws)(sum(i in 1..k, j in (k+1)..n)(x[i, j, t + P2[i]]) <= y[1, t] * cp);
 
 % Время отправления транспорта от последующих станций зависит от времени отправления от первой станции
 constraint forall(i in 2..(n-1), t in 1..T-P[i], dt in 1..P[i])(y[1,t] == y[i, t + P[i]]);
 
 % Все пассажиры доезжают до своей станции к концу горизонта планирования
-constraint forall(i in 1..n-1, j in (i+1)..n, t in T-sum(k in i..j-1)(p[k])+1..T)(x[i,j,t] == 0);
+constraint forall(i in nws, j in (i+1)..n, t in T-sum(k in i..j-1)(p[k])+1..T)(x[i,j,t] == 0);
 
 % В конце горизонта планирования все остановки пустые
-constraint forall(i in 1..(n-1))(z[i, T-1] == 0);
+constraint forall(i in nws)(z[i, T-1] == 0);
 
 % Если в момент времени t от станции 1 выехали y[1,t] автобусов, то пока они не закончат рейс, они не могут отправляться от других остановок
-% Тут можно будет добавить время на отдых для водителя
+% (Тут можно будет добавить время на отдых для водителя)
 constraint forall(i in 2..(n-1), t in 1..T-P[i])(if y[1, t] != 0 then sum(dt in 0..P[i]-1)(y[i, t + dt]) <= m - y[1, t] else true endif);
-% Тоже самое для первой остановки  (неудобная индексация у P, в каждом случае удобнее своя)
+% Тоже самое для первой остановки (неудобная индексация у P, в каждом случае удобнее своя)
 constraint forall(t in 1..(T - P[n]))(if y[1, t] != 0 then sum(dt in 1..P[n])(y[1, t+dt]) <= m - y[1, t] else true endif);
 
 % Автобусы не могут появиться на остановке i > 1 до отправления от остановки 1 в начале горизонта планирования
