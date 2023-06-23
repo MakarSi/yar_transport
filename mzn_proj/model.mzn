@@ -14,15 +14,15 @@ array[nws, nw, Tw] of int: g;     % количество пассажиров, �
 
 % Variables
 array[nws, nw, Tw] of var int: x; % количество пассажиров, которые отправились со станции i на станцию j в момент времени t 
-array[nws, Tw] of var 0..m: y;    % сколько транспорта отправилось от остановки i в момент времени t
-array[nws, Tw] of var int: z;     % количество пассажиров, оставшихся на остановке i по окончанию момента времени t
+array[nws, Tw] of var 0..1: y;    % сколько транспорта отправилось от остановки i в момент времени t
+array[nws, Tw] of var 0..40: z;     % количество пассажиров, оставшихся на остановке i по окончанию момента времени t
 
 
 % Constraints
 % x, z должны быть положительными
-constraint forall(i in nws, j in nw, t in Tw)(x[i, j, t] >= 0); 
-constraint forall(i in nws, t in Tw)(z[i, t] >= 0); 
-
+% constraint forall(i in nws, j in nw, t in Tw)(x[i, j, t] >= 0); 
+% constraint forall(i in nws, t in Tw)(z[i, t] >= 0); 
+constraint forall(j in 2..n, i in j..n-1, t in Tw)(x[i, j, t] == 0);
 % Выражение z через g и x
 constraint forall(i in nws, t in Tw)(
               z[i, t] = sum(dj in (i+1)..n, dt in 1..t)(g[i, dj, dt]) - sum(dt in 1..t, dj in (i+1)..n)(x[i, dj, dt])
@@ -36,9 +36,9 @@ constraint forall(i in nws, t in Tw)(cp * y[i, t] >= sum(j in (i+1)..n)(x[i, j, 
 
 % Вместимость транспортного средства не нарушается для любого участка движения
 constraint forall(t in 1..T-P[n]+1, k in nws)(sum(i in 1..k, j in (k+1)..n)(x[i, j, t + P2[i]]) <= y[1, t] * cp);
-
+        
 % Время отправления транспорта от последующих станций зависит от времени отправления от первой станции
-constraint forall(i in 2..(n-1), t in 1..T-P[i], dt in 1..P[i])(y[1,t] == y[i, t + P[i]]);
+constraint forall(i in 2..(n-1), t in 1..T-P[i])(y[1,t] == y[i, t + P[i]]);
 
 % Все пассажиры доезжают до своей станции к концу горизонта планирования
 constraint forall(i in nws, j in (i+1)..n, t in T-sum(k in i..j-1)(p[k])+1..T)(x[i,j,t] == 0);
@@ -62,10 +62,11 @@ constraint forall(t in (T-P[n]+1)..T)(y[1, t] == 0);
 solve minimize sum(i in 1..n-1, j in 1..T)(z[i, j]);
 
 % Output
-output ["X matrix \n"];
-output [show_int(2, x[i,j,t]) ++ if j == n /\ t == T then "\n" else if t == T then "    " else " " endif endif | i in nws, j in nw, t in Tw];
-output ["Y matrix \n"];
-output [show_int(2, y[i,t]) ++ if t == T then "\n" else " " endif | i in nws, t in Tw];
-output ["Z matrix \n"];
-output [show_int(2, z[i,t]) ++ if t == T then "\n" else " " endif | i in nws, t in Tw];
-output [show(sum(i in  nws, t in Tw)(z[i,t]))]
+%output ["X matrix \n"];
+%output [show_int(2, x[i,j,t]) ++ if j == n /\ t == T then "\n" else if t == T then "    " else " " endif endif | i in nws, j in nw, t in Tw];
+%output ["Y matrix \n"];
+%output [show_int(2, y[i,t]) ++ if t == T then "\n" else " " endif | i in nws, t in Tw];
+%output ["Z matrix \n"];
+%output [show_int(2, z[i,t]) ++ if t == T then "\n" else " " endif | i in nws, t in Tw];
+%output [show(sum(i in  nws, t in Tw)(z[i,t]))]  
+output[show(y[1,t]) ++ " " | t in Tw]
